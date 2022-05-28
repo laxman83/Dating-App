@@ -18,6 +18,8 @@ using API.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using API.Extensions;
+using API.Middleware;
 
 namespace API
 {
@@ -33,28 +35,10 @@ namespace API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            _ = services.AddScoped<ITokenService, TokenService>();
-            _ = services.AddDbContext<DataContext>(options =>
-              {
-#pragma warning disable CS8604 // Possible null reference argument.
-                  _ = options.UseSqlite(_config.GetConnectionString("DefaultConnection"));
-#pragma warning restore CS8604 // Possible null reference argument.
-              });
+            _ = services.AddApplicationServices(_config);
             _ = services.AddControllers();
             _ = services.AddCors();
-            _ = services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-#pragma warning disable CS8604 // Possible null reference argument.
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["TokenKey"])),
-                        ValidateIssuer = false,
-                        ValidateAudience = false,
-                    };
-#pragma warning restore CS8604 // Possible null reference argument.
-                });
+            _ = services.AddIdentityServices(_config);
 
            _ = services.AddSwaggerGen(c =>
               {
@@ -67,7 +51,7 @@ namespace API
         {
             if (env.IsDevelopment())
             {
-                _ = app.UseDeveloperExceptionPage();
+                _ = app.UseMiddleware<ExceptionMiddleware>();
                 _ = app.UseSwagger();
                 _ = app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "WebAPIv5 v1"));
             }
